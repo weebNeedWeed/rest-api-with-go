@@ -2,7 +2,6 @@ package user
 
 import (
 	"database/sql"
-	"fmt"
 	"go-rest-api/types"
 )
 
@@ -15,7 +14,7 @@ func NewStore(db *sql.DB) *Store {
 }
 
 func (s *Store) GetUserByEmail(email string) (*types.User, error) {
-	q := `SELECT ID, FirstName, LastName, Email, Password, CreatedAt FROM Users WHERE Email = ?`
+	q := `SELECT id, firstName, lastName, email, password, createdAt FROM users WHERE Email = ?`
 	rows, err := s.db.Query(q, email)
 	if err != nil {
 		return nil, err
@@ -29,17 +28,32 @@ func (s *Store) GetUserByEmail(email string) (*types.User, error) {
 		}
 	}
 
-	if u == nil {
-		return nil, fmt.Errorf("no user found with given email %s", email)
-	}
-
 	return u, nil
 }
 
 func (s *Store) GetUserByID(id int) (*types.User, error) {
-	return nil, nil
+	q := `SELECT id, firstName, lastName, email, password, createdAt FROM users WHERE id = ?`
+	rows, err := s.db.Query(q, id)
+	if err != nil {
+		return nil, err
+	}
+
+	var u *types.User
+	for rows.Next() {
+		if u, err = scanRowToUser(rows); err != nil {
+			return nil, err
+		}
+	}
+
+	return u, nil
 }
 func (s *Store) CreateUser(user types.User) error {
+	_, err := s.db.Exec(`INSERT INTO users (firstName, lastName, email, password)
+		VALUES (?,?,?,?)`, user.FirstName, user.LastName, user.Email, user.Password)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
